@@ -2485,7 +2485,8 @@ int32 field::process_idle_command(uint16 step) {
 		nil_event.event_code = EVENT_FREE_CHAIN;
 		core.to_bp = TRUE;
 		core.to_ep = TRUE;
-		if((!(core.duel_options & DUEL_ATTACK_FIRST_TURN) && infos.turn_id == 1) || infos.phase == PHASE_MAIN2 || is_player_affected_by_effect(infos.turn_player, EFFECT_CANNOT_BP))
+		//modded
+		if(infos.phase == PHASE_MAIN2 || is_player_affected_by_effect(infos.turn_player, EFFECT_CANNOT_BP))
 			core.to_bp = FALSE;
 		if(infos.phase == PHASE_MAIN1) {
 			for(uint32 i = 0; i < 5; ++i) {
@@ -2498,14 +2499,19 @@ int32 field::process_idle_command(uint16 step) {
 			if(core.to_bp && (must_attack || is_player_affected_by_effect(infos.turn_player, EFFECT_CANNOT_EP)))
 				core.to_ep = FALSE;
 		}
+		//modded
 		if((infos.phase == PHASE_MAIN1 && is_player_affected_by_effect(infos.turn_player, EFFECT_SKIP_M1))
 		        || (infos.phase == PHASE_MAIN2 && is_player_affected_by_effect(infos.turn_player, EFFECT_SKIP_M2))) {
 			if(core.to_bp && core.to_ep) {
-				core.select_options.clear();
-				core.select_options.push_back(80);
-				core.select_options.push_back(81);
-				add_process(PROCESSOR_SELECT_OPTION, 0, 0, 0, infos.turn_player, 0);
-				core.units.begin()->step = 11;
+				//core.select_options.clear();
+				//core.select_options.push_back(80);
+				//core.select_options.push_back(81);
+				//add_process(PROCESSOR_SELECT_OPTION, 0, 0, 0, infos.turn_player, 0);
+				//core.units.begin()->step = 11;
+				core.units.begin()->arg1 = 6;
+				core.units.begin()->step = 10;
+				reset_phase(infos.phase);
+				adjust_all();
 			} else if(core.to_bp) {
 				core.units.begin()->arg1 = 6;
 				core.units.begin()->step = 10;
@@ -3267,7 +3273,8 @@ int32 field::process_battle_command(uint16 step) {
 	}
 	case 23: {
 		if(core.attacker->current.location != LOCATION_MZONE || core.attacker->fieldid_r != core.pre_field[0]
-		        || ((core.attacker->current.position & POS_DEFENSE) && !(core.attacker->is_affected_by_effect(EFFECT_DEFENSE_ATTACK)))
+				//modded
+		        //|| ((core.attacker->current.position & POS_DEFENSE) && !(core.attacker->is_affected_by_effect(EFFECT_DEFENSE_ATTACK)))
 		        || (core.attack_target && (core.attack_target->current.location != LOCATION_MZONE || core.attack_target->fieldid_r != core.pre_field[1]))) {
 			core.units.begin()->step = 32;
 			return FALSE;
@@ -3343,12 +3350,13 @@ int32 field::process_battle_command(uint16 step) {
 		uint8 bd[2];
 		calculate_battle_damage(&damchange, &reason_card, bd);
 		if(bd[0]) {
+		//modded
 			effect* indestructable_effect = core.attacker->is_affected_by_effect(EFFECT_INDESTRUCTABLE_BATTLE, core.attack_target);
 			if(indestructable_effect) {
-				pduel->write_buffer8(MSG_HINT);
-				pduel->write_buffer8(HINT_CARD);
-				pduel->write_buffer8(0);
-				pduel->write_buffer32(indestructable_effect->owner->data.code);
+				//pduel->write_buffer8(MSG_HINT);
+				//pduel->write_buffer8(HINT_CARD);
+				//pduel->write_buffer8(0);
+				//pduel->write_buffer32(indestructable_effect->owner->data.code);
 				bd[0] = FALSE;
 			} else
 				core.attacker->set_status(STATUS_BATTLE_RESULT, TRUE);
@@ -3356,10 +3364,10 @@ int32 field::process_battle_command(uint16 step) {
 		if(bd[1]) {
 			effect* indestructable_effect = core.attack_target->is_affected_by_effect(EFFECT_INDESTRUCTABLE_BATTLE, core.attacker);
 			if(indestructable_effect) {
-				pduel->write_buffer8(MSG_HINT);
-				pduel->write_buffer8(HINT_CARD);
-				pduel->write_buffer8(0);
-				pduel->write_buffer32(indestructable_effect->owner->data.code);
+				//pduel->write_buffer8(MSG_HINT);
+				//pduel->write_buffer8(HINT_CARD);
+				//pduel->write_buffer8(0);
+				//pduel->write_buffer32(indestructable_effect->owner->data.code);
 				bd[1] = FALSE;
 			} else
 				core.attack_target->set_status(STATUS_BATTLE_RESULT, TRUE);
@@ -5029,26 +5037,26 @@ int32 field::adjust_step(uint16 step) {
 			winp = 1;
 			rea = 1;
 		}
-		if(core.overdraw[0] && !core.overdraw[1]) {
-			winp = 1;
-			rea = 2;
-		}
+		//if(core.overdraw[0] && !core.overdraw[1]) {
+		//	winp = 1;
+		//	rea = 2;
+		//}
 		if(player[1].lp <= 0 && player[0].lp > 0) {
 			winp = 0;
 			rea = 1;
 		}
-		if(core.overdraw[1] && !core.overdraw[0]) {
-			winp = 0;
-			rea = 2;
-		}
+		//if(core.overdraw[1] && !core.overdraw[0]) {
+		//	winp = 0;
+		//	rea = 2;
+		//}
 		if(player[1].lp <= 0 && player[0].lp <= 0) {
 			winp = PLAYER_NONE;
 			rea = 1;
 		}
-		if(core.overdraw[1] && core.overdraw[0]) {
-			winp = PLAYER_NONE;
-			rea = 2;
-		}
+		//if(core.overdraw[1] && core.overdraw[0]) {
+		//	winp = PLAYER_NONE;
+		//	rea = 2;
+		//}
 		if(winp != 5) {
 			pduel->write_buffer8(MSG_WIN);
 			pduel->write_buffer8(winp);

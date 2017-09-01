@@ -227,6 +227,7 @@ static const struct luaL_Reg cardlib[] = {
 	{ "ResetNegateEffect", scriptlib::card_reset_negate_effect },
 	{ "AssumeProperty", scriptlib::card_assume_prop },
 	{ "SetSPSummonOnce", scriptlib::card_set_spsummon_once },
+	{ "FilterEffect", scriptlib::card_filter_effect },
 	{ NULL, NULL }
 };
 
@@ -510,6 +511,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "VenomSwampCheck", scriptlib::duel_venom_swamp_check },
 	{ "SwapDeckAndGrave", scriptlib::duel_swap_deck_and_grave },
 	{ "MajesticCopy", scriptlib::duel_majestic_copy },
+	{ "FilterPlayerEffect", scriptlib::duel_filter_player_effect },
 	{ NULL, NULL }
 };
 
@@ -569,6 +571,8 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	load_script((char*) "./script/constant.lua");
 	load_script((char*) "./script/utility.lua");
 	load_script((char*) "./specials/special.lua");
+	//modded
+	load_script((char*) "./expansions/script/rules.lua");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);
@@ -859,7 +863,12 @@ int32 interpreter::call_code_function(uint32 code, char* f, uint32 param_count, 
 		params.clear();
 		return OPERATION_FAIL;
 	}
-	load_card_script(code);
+	//modded
+	if (code > 0) {
+		load_card_script(code);
+	} else {
+		lua_getglobal(current_state, "Auxiliary");
+	}
 	lua_getfield(current_state, -1, f);
 	if (!lua_isfunction(current_state, -1)) {
 		sprintf(pduel->strbuffer, "\"CallCodeFunction\": attempt to call an error function");
